@@ -37,8 +37,6 @@ def get_bin_collection(address: str) -> list[dict]:
         raise ValueError(f"No address results found for: {address!r}")
 
     geoid = items[0]["Id"]
-    matched = items[0].get("AddressName", items[0].get("Name", ""))
-    print(f"Matched address: {matched}  (geo id: {geoid})")
 
     # Step 2: fetch waste services for that location
     r = session.get(
@@ -70,18 +68,37 @@ def get_bin_collection(address: str) -> list[dict]:
     return collections
 
 
-def main():
-    address = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else DEFAULT_ADDRESS
+def notify_message(collections: list[dict]) -> str | None:
+    today = datetime.date.today()
+    due = [
+        c for c in collections
+        if c["next_collection"] and (c["next_collection"] - today).days <= 1
+    ]
+    if not due:
+        return None
+    types = " + ".join(c["type"] for c in sorted(due, key=lambda x: x["type"]))
+    return f"Put out tonight: {types}"
 
-    print(f"Looking up bin collection for: {address}\n")
+
+def main():
+    notify = "--notify" in sys.argv
+    args = [a for a in sys.argv[1:] if a != "--notify"]
+    address = " ".join(args) if args else DEFAULT_ADDRESS
+
     try:
         collections = get_bin_collection(address)
     except requests.HTTPError as e:
-        print(f"HTTP error: {e}")
+        print(f"HTTP error: {e}", file=sys.stderr)
         sys.exit(1)
     except ValueError as e:
-        print(f"Error: {e}")
+        print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
+
+    if notify:
+        msg = notify_message(collections)
+        if msg:
+            print(msg)
+        return
 
     if not collections:
         print("No collection data returned.")
@@ -93,7 +110,7 @@ def main():
         days_away = (c["next_collection"] - today).days if c["next_collection"] else None
         when = (
             "TODAY" if days_away == 0
-            else f"tomorrow" if days_away == 1
+            else "tomorrow" if days_away == 1
             else f"in {days_away} days"
             if days_away is not None else "unknown"
         )
