@@ -1,0 +1,31 @@
+name: Bin Night Reminder
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # 7pm AEST (9am UTC) every Monday
+  workflow_dispatch:      # allow manual trigger from the Actions tab
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install requests beautifulsoup4
+
+      - name: Check bins and notify
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          MESSAGE=$(python bin_night.py --notify)
+          if [ -n "$MESSAGE" ]; then
+            curl -s \
+              -H "Title: Bin Night" \
+              -H "Priority: high" \
+              -d "$MESSAGE" \
+              "https://ntfy.sh/$NTFY_TOPIC"
+          fi
