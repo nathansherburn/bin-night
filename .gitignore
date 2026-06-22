@@ -10,6 +10,13 @@ out/
 node_modules/
 .vercel/
 
+# PWA build artifacts
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+public/workbox-*.js
+public/workbox-*.js.map
+
 # Env
 .env
 .env.local
