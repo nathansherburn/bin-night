@@ -37,10 +37,6 @@ export default async function Home() {
   }
 
   const groups = groupByDate(collections);
-  const tonight = groups.find((g) => {
-    const d = daysUntil(g.date);
-    return d !== null && d <= 1;
-  });
 
   return (
     <main className="mx-auto max-w-lg px-4 py-12">
@@ -57,69 +53,61 @@ export default async function Home() {
           {error}
         </div>
       ) : (
-        <>
-          <section className="mb-8">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">
-              Put out tonight
-            </h2>
-            {tonight ? (
-              <div className="flex flex-col gap-3">
-                {tonight.types.map((type) => {
-                  const style = getBinStyle(type);
-                  return (
-                    <div
-                      key={type}
-                      className={`flex items-center gap-4 rounded-xl border ${style.border} ${style.bg} px-5 py-4`}
-                    >
-                      <span className={`h-3 w-3 rounded-full shrink-0 ${style.dot}`} />
-                      <span className="font-semibold text-slate-100 flex-1">{type}</span>
-                      <span className="text-xs font-bold uppercase tracking-wide text-orange-400">
-                        {whenLabel(daysUntil(tonight.date))}
-                      </span>
-                    </div>
-                  );
-                })}
+        <div className="flex flex-col gap-5">
+          {groups.map((group) => {
+            const days = daysUntil(group.date);
+            const isTonight = days !== null && days <= 1;
+            return (
+              <div
+                key={group.raw}
+                className={
+                  isTonight
+                    ? 'rounded-2xl border border-orange-500/60 bg-orange-500/5 p-4 ring-1 ring-orange-500/20'
+                    : ''
+                }
+              >
+                <div className="flex items-baseline justify-between mb-2 px-1">
+                  <span className="text-sm font-semibold text-slate-200">{group.raw}</span>
+                  <span
+                    className={
+                      isTonight
+                        ? 'text-xs font-bold uppercase tracking-wide text-orange-400'
+                        : 'text-xs text-slate-500'
+                    }
+                  >
+                    {isTonight ? 'Put out tonight' : whenLabel(days)}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {group.types.map((type) => {
+                    const style = getBinStyle(type);
+                    return (
+                      <div
+                        key={type}
+                        className={`flex items-center gap-4 rounded-lg border ${style.border} ${style.bg} ${
+                          isTonight ? 'px-5 py-4' : 'px-4 py-3'
+                        }`}
+                      >
+                        <span
+                          className={`rounded-full shrink-0 ${style.dot} ${
+                            isTonight ? 'h-3 w-3' : 'h-2.5 w-2.5'
+                          }`}
+                        />
+                        <span
+                          className={`flex-1 font-medium text-slate-100 ${
+                            isTonight ? 'text-base font-semibold' : 'text-sm'
+                          }`}
+                        >
+                          {type}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            ) : (
-              <div className="rounded-xl border border-slate-800 bg-slate-900/40 px-5 py-4 text-slate-400 text-sm">
-                No bins due in the next 24 hours.
-              </div>
-            )}
-          </section>
-
-          <section>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">
-              Full schedule
-            </h2>
-            <div className="flex flex-col gap-5">
-              {groups.map((group) => {
-                const days = daysUntil(group.date);
-                return (
-                  <div key={group.raw}>
-                    <div className="flex items-baseline justify-between mb-2 px-1">
-                      <span className="text-sm font-semibold text-slate-200">{group.raw}</span>
-                      <span className="text-xs text-slate-500">{whenLabel(days)}</span>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      {group.types.map((type) => {
-                        const style = getBinStyle(type);
-                        return (
-                          <div
-                            key={type}
-                            className={`flex items-center gap-4 rounded-lg border ${style.border} ${style.bg} px-4 py-3`}
-                          >
-                            <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${style.dot}`} />
-                            <span className="flex-1 text-sm font-medium text-slate-200">{type}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        </>
+            );
+          })}
+        </div>
       )}
 
       <footer className="mt-12 text-xs text-slate-700 text-center">
