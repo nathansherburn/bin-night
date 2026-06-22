@@ -48,11 +48,12 @@ export async function getBinCollection(address: string = DEFAULT_ADDRESS): Promi
     const type = heading.text.trim();
     const raw = nextService.text.trim();
 
-    // Parse date like "Mon 23/06/2025"
+    // Parse date like "Mon 23/6/2026" (day/month may be single digit)
     let nextCollection: Date | null = null;
-    const match = raw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    const match = raw.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (match) {
-      nextCollection = new Date(`${match[3]}-${match[2]}-${match[1]}`);
+      const [, day, month, year] = match;
+      nextCollection = new Date(Number(year), Number(month) - 1, Number(day));
     }
 
     collections.push({ type, nextCollection, raw });
@@ -65,10 +66,48 @@ export async function getBinCollection(address: string = DEFAULT_ADDRESS): Promi
   });
 }
 
+export interface DateGroup {
+  date: Date | null;
+  raw: string;
+  types: string[];
+}
+
+/** Group collections that fall on the same date together, sorted soonest first. */
+export function groupByDate(collections: BinCollection[]): DateGroup[] {
+  const groups = new Map<string, DateGroup>();
+
+  for (const c of collections) {
+    const key = c.nextCollection ? c.nextCollection.toISOString().slice(0, 10) : 'unknown';
+    const existing = groups.get(key);
+    if (existing) {
+      existing.types.push(c.type);
+    } else {
+      groups.set(key, { date: c.nextCollection, raw: c.raw, types: [c.type] });
+    }
+  }
+
+  return [...groups.values()].sort((a, b) => {
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return a.date.getTime() - b.date.getTime();
+  });
+}
+
+/** Today's date in Melbourne, as a UTC-midnight Date for comparison with collection dates. */
+function melbourneToday(): Date {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Australia/Melbourne',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date()); // -> "YYYY-MM-DD"
+  const [year, month, day] = parts.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export function daysUntil(date: Date | null): number | null {
   if (!date) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = melbourneToday();
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   return Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));

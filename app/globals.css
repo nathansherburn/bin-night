@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #ffffff 0%, rgba(255, 255, 255, 0) 60%),
+    linear-gradient(180deg, #f1f5f9 0%, #e9eef5 100%);
+  background-attachment: fixed;
+}
+
+@keyframes softpulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.82); }
+}
+
+.animate-softpulse {
+  animation: softpulse 2s ease-in-out infinite;
+}
