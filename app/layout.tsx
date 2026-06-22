@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.className}>
       <head>
-        <meta name="theme-color" content="#f59e0b" />
+        <meta name="theme-color" content="#f1f5f9" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="min-h-screen text-slate-800 antialiased">{children}</body>
