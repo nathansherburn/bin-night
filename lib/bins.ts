@@ -9,11 +9,17 @@ export interface BinCollection {
   raw: string;
 }
 
+const HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (compatible; bin-night-checker)',
+  'Referer': `${BASE_URL}/Waste-Sustainability/Bin-Collection/When-we-collect-your-bins`,
+  'Accept': 'application/json, text/plain, */*',
+};
+
 export async function getBinCollection(address: string = DEFAULT_ADDRESS): Promise<BinCollection[]> {
   // Step 1: resolve address to a geolocation ID
   const searchRes = await fetch(
     `${BASE_URL}/api/v1/myarea/search?keywords=${encodeURIComponent(address)}`,
-    { next: { revalidate: 21600 } },
+    { headers: HEADERS, next: { revalidate: 21600 } },
   );
   if (!searchRes.ok) throw new Error(`Search API error: ${searchRes.status}`);
   const searchData = await searchRes.json();
@@ -26,7 +32,7 @@ export async function getBinCollection(address: string = DEFAULT_ADDRESS): Promi
   // Step 2: fetch waste services for that location
   const wasteRes = await fetch(
     `${BASE_URL}/ocapi/Public/myarea/wasteservices?geolocationid=${geoid}&ocsvclang=en-AU`,
-    { next: { revalidate: 21600 } },
+    { headers: HEADERS, next: { revalidate: 21600 } },
   );
   if (!wasteRes.ok) throw new Error(`Waste API error: ${wasteRes.status}`);
   const wasteData = await wasteRes.json();
