@@ -9,10 +9,16 @@ export interface BinCollection {
   raw: string;
 }
 
+// Mimic the in-page XHR the Monash site itself makes, so the WAF doesn't
+// reject the request as a bot. The X-Requested-With header in particular is
+// what the site's own fetch sends.
 const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (compatible; bin-night-checker)',
+  'User-Agent':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'application/json, text/javascript, */*; q=0.01',
+  'Accept-Language': 'en-AU,en;q=0.9',
+  'X-Requested-With': 'XMLHttpRequest',
   'Referer': `${BASE_URL}/Waste-Sustainability/Bin-Collection/When-we-collect-your-bins`,
-  'Accept': 'application/json, text/plain, */*',
 };
 
 export async function getBinCollection(address: string = DEFAULT_ADDRESS): Promise<BinCollection[]> {
