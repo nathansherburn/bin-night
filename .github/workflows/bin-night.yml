@@ -8,6 +8,8 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -29,3 +31,13 @@ jobs:
               -d "$MESSAGE" \
               "https://ntfy.sh/$NTFY_TOPIC"
           fi
+
+      - name: Update schedule data for web app
+        run: |
+          mkdir -p data
+          python bin_night.py --json > data/schedule.json.tmp && mv data/schedule.json.tmp data/schedule.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/schedule.json
+          git diff --staged --quiet || git commit -m "Update bin schedule data"
+          git push

@@ -1,6 +1,4 @@
-import { getBinCollection, groupByDate, daysUntil, whenLabel, DEFAULT_ADDRESS } from '@/lib/bins';
-
-export const revalidate = 21600; // 6 hours
+import { getCollections, groupByDate, daysUntil, whenLabel } from '@/lib/bins';
 
 type BinStyle = { lid: string; chip: string; text: string };
 
@@ -53,42 +51,17 @@ function BinIcon({ className }: { className?: string }) {
   );
 }
 
-export default async function Home() {
-  const address = process.env.BIN_ADDRESS ?? DEFAULT_ADDRESS;
-
-  let collections: Awaited<ReturnType<typeof getBinCollection>> = [];
-  let error: string | null = null;
-
-  try {
-    collections = await getBinCollection(address);
-  } catch (e) {
-    error = e instanceof Error ? e.message : 'Failed to fetch bin schedule';
-  }
-
+export default function Home() {
+  const { collections, fetchedAt } = getCollections();
   const groups = groupByDate(collections);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col px-5 py-12 sm:py-16">
       <header className="mb-9">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-          Monash Council
-        </p>
-        <h1 className="mt-1.5 text-4xl font-bold tracking-tight text-slate-900">Bin Night</h1>
-        <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 shrink-0">
-            <path d="M12 21s-7-5.686-7-11a7 7 0 1 1 14 0c0 5.314-7 11-7 11Z" strokeLinejoin="round" />
-            <circle cx="12" cy="10" r="2.5" />
-          </svg>
-          <span className="truncate">{address}</span>
-        </p>
+        <h1 className="text-4xl font-bold tracking-tight text-slate-900">Bin Night</h1>
       </header>
 
-      {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700">
-          <p className="font-semibold">Couldn&rsquo;t load the schedule</p>
-          <p className="mt-1 text-rose-600/80">{error}</p>
-        </div>
-      ) : groups.length === 0 ? (
+      {groups.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500">
           No collection data available.
         </div>
@@ -148,7 +121,9 @@ export default async function Home() {
       )}
 
       <footer className="mt-auto pt-12 text-center text-xs text-slate-400">
-        Updated every 6 hours &middot; reminders via ntfy.sh every Monday
+        Data updated Monday evenings &middot; reminders via ntfy.sh
+        <br />
+        Last fetched {fetchedAt.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Australia/Melbourne' })}
       </footer>
     </main>
   );
