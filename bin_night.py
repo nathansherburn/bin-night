@@ -82,7 +82,8 @@ def notify_message(collections: list[dict]) -> str | None:
 
 def main():
     notify = "--notify" in sys.argv
-    args = [a for a in sys.argv[1:] if a != "--notify"]
+    output_json = "--json" in sys.argv
+    args = [a for a in sys.argv[1:] if a not in ("--notify", "--json")]
     address = " ".join(args) if args else DEFAULT_ADDRESS
 
     try:
@@ -93,6 +94,22 @@ def main():
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
+
+    if output_json:
+        import json
+        print(json.dumps({
+            "address": address,
+            "fetchedAt": datetime.datetime.utcnow().isoformat() + "Z",
+            "collections": [
+                {
+                    "type": c["type"],
+                    "nextCollection": c["next_collection"].isoformat() if c["next_collection"] else None,
+                    "raw": c["raw"],
+                }
+                for c in collections
+            ],
+        }, indent=2))
+        return
 
     if notify:
         msg = notify_message(collections)

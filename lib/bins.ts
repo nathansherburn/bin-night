@@ -1,7 +1,4 @@
-import { parse } from 'node-html-parser';
-
-const BASE_URL = 'https://www.monash.vic.gov.au';
-export const DEFAULT_ADDRESS = '2a Donald Street Mount Waverley';
+import scheduleData from '@/data/schedule.json';
 
 export interface BinCollection {
   type: string;
@@ -9,73 +6,19 @@ export interface BinCollection {
   raw: string;
 }
 
-// Mimic the in-page XHR the Monash site itself makes, so the WAF doesn't
-// reject the request as a bot. The X-Requested-With header in particular is
-// what the site's own fetch sends.
-const HEADERS = {
-  'User-Agent':
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Accept': 'application/json, text/javascript, */*; q=0.01',
-  'Accept-Language': 'en-AU,en;q=0.9',
-  'X-Requested-With': 'XMLHttpRequest',
-  'Referer': `${BASE_URL}/Waste-Sustainability/Bin-Collection/When-we-collect-your-bins`,
-};
-
-export async function getBinCollection(address: string = DEFAULT_ADDRESS): Promise<BinCollection[]> {
-  // Step 1: resolve address to a geolocation ID
-  const searchRes = await fetch(
-    `${BASE_URL}/api/v1/myarea/search?keywords=${encodeURIComponent(address)}`,
-    { headers: HEADERS, next: { revalidate: 21600 } },
-  );
-  if (!searchRes.ok) throw new Error(`Search API error: ${searchRes.status}`);
-  const searchData = await searchRes.json();
-
-  const items: { Id: string }[] = searchData.Items ?? [];
-  if (!items.length) throw new Error(`No address results found for: ${address}`);
-
-  const geoid = items[0].Id;
-
-  // Step 2: fetch waste services for that location
-  const wasteRes = await fetch(
-    `${BASE_URL}/ocapi/Public/myarea/wasteservices?geolocationid=${geoid}&ocsvclang=en-AU`,
-    { headers: HEADERS, next: { revalidate: 21600 } },
-  );
-  if (!wasteRes.ok) throw new Error(`Waste API error: ${wasteRes.status}`);
-  const wasteData = await wasteRes.json();
-
-  const root = parse(wasteData.responseContent as string);
-  const collections: BinCollection[] = [];
-
-  for (const article of root.querySelectorAll('article')) {
-    const heading = article.querySelector('h3');
-    const nextService = article.querySelector('.next-service');
-    if (!heading || !nextService) continue;
-
-    const type = heading.text.trim();
-    const raw = nextService.text.trim();
-
-    // Parse date like "Mon 23/6/2026" (day/month may be single digit)
-    let nextCollection: Date | null = null;
-    const match = raw.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (match) {
-      const [, day, month, year] = match;
-      nextCollection = new Date(Number(year), Number(month) - 1, Number(day));
-    }
-
-    collections.push({ type, nextCollection, raw });
-  }
-
-  return collections.sort((a, b) => {
-    if (!a.nextCollection) return 1;
-    if (!b.nextCollection) return -1;
-    return a.nextCollection.getTime() - b.nextCollection.getTime();
-  });
-}
-
 export interface DateGroup {
   date: Date | null;
   raw: string;
   types: string[];
+}
+
+export function getCollections(): { collections: BinCollection[]; fetchedAt: Date } {
+  const collections = scheduleData.collections.map((c) => ({
+    type: c.type,
+    nextCollection: c.nextCollection ? new Date(c.nextCollection) : null,
+    raw: c.raw,
+  }));
+  return { collections, fetchedAt: new Date(scheduleData.fetchedAt) };
 }
 
 /** Group collections that fall on the same date together, sorted soonest first. */
@@ -99,14 +42,14 @@ export function groupByDate(collections: BinCollection[]): DateGroup[] {
   });
 }
 
-/** Today's date in Melbourne, as a UTC-midnight Date for comparison with collection dates. */
+/** Today's date in Melbourne, as a local-midnight Date for comparison. */
 function melbourneToday(): Date {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Australia/Melbourne',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).format(new Date()); // -> "YYYY-MM-DD"
+  }).format(new Date());
   const [year, month, day] = parts.split('-').map(Number);
   return new Date(year, month - 1, day);
 }
