@@ -2,11 +2,12 @@ name: Bin Night Reminder
 
 on:
   schedule:
-    - cron: '0 9 * * 1'  # 7pm AEST (9am UTC) every Monday
-  workflow_dispatch:      # allow manual trigger from the Actions tab
+    - cron: '0 9 * * 1'   # Monday 7pm AEST — send the "put out tonight" reminder
+    - cron: '0 20 * * *'  # 6am AEST daily — refresh the website data
+  workflow_dispatch:       # allow manual trigger from the Actions tab
 
 jobs:
-  notify:
+  bins:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -19,7 +20,9 @@ jobs:
 
       - run: pip install requests beautifulsoup4
 
-      - name: Check bins and notify
+      - name: Send reminder notification
+        # Only on the Monday-evening schedule (and manual runs), not the daily refresh
+        if: github.event.schedule == '0 9 * * 1' || github.event_name == 'workflow_dispatch'
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: |
