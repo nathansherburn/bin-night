@@ -1,6 +1,6 @@
 {
   "address": "2a Donald Street Mount Waverley",
-  "fetchedAt": "2026-06-29T20:34:04.382102Z",
+  "fetchedAt": "2026-06-30T20:34:36.149863Z",
   "collections": [
     {
       "type": "Landfill Waste",
@@ -9,13 +9,13 @@
     },
     {
       "type": "Recycling",
-      "nextCollection": "2026-06-30",
-      "raw": "Tue 30/6/2026"
+      "nextCollection": "2026-07-14",
+      "raw": "Tue 14/7/2026"
     },
     {
       "type": "Food and Garden Waste",
-      "nextCollection": "2026-06-30",
-      "raw": "Tue 30/6/2026"
+      "nextCollection": "2026-07-07",
+      "raw": "Tue 7/7/2026"
     },
     {
       "type": "Hard Waste",
